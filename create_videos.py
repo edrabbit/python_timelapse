@@ -44,8 +44,8 @@ def create_one_day_timelapse(date=None, source_dir=None, output_file=None, overw
     print(ff_cmd)
     subprocess.run(ff_cmd)
 
-def create_all_timelapses(source_dir=SOURCE_DIR, output_path=OUTPUT_DIR,
-                          first_day=FIRST_DAY, last_day=LAST_DAY, overwrite=False):
+def create_all_timelapses(source_dir=None, output_path=None,
+                          first_day=None, last_day=None, overwrite=False):
     """ Create multiple timelapses from the files in source_dir into output_path starting with first_day and
     ending (inclusive) with last_day. source_dir should not have subfolders """
     if not os.path.exists(output_path):

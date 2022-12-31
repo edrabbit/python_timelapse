@@ -127,22 +127,23 @@ class TLDirectory:
 
 
 def get_all_directories(path="/Volumes/cam/ftp", last_x_days=0):
-    # Return a list of TLDirectory objects for all the directories in 'path'
+    # Return a dict of TLDirectory objects for all the directories in 'path' with YYYY-MM-DD as keys
     list_subfolders = [f.path for f in os.scandir(path) if f.is_dir()]  # full path
     _subfolders = natsort.natsorted(list_subfolders)
-    all_dirs = []
+    all_dirs_dict = {}
     if last_x_days:
         subfolders = _subfolders[(0 - last_x_days):]
     else:
         subfolders = _subfolders
     for path in subfolders:
         tld = TLDirectory(path)
-        all_dirs.append(tld)
-    return all_dirs
+        all_dirs_dict[tld.date.strftime("%Y%m%d")] = tld
+    return all_dirs_dict
 
 
 def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
                    dest_dir="/Volumes/Timelapse/sunset_files",
+                   first_day=None, last_day=None,
                    event="sunset",
                    number_of_minutes=15, last_x_days=0,
                    gh_start_offset=0, gh_end_offset=0):
@@ -162,17 +163,12 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
     missing_files = []
     i = 0
     dir_count = len(all_dirs)
-    for d in all_dirs:
+    date = first_day
+    while date <= last_day:
+        d = all_dirs[date.strftime("%Y%m%d")]
+        # Do the shit
         i += 1
         print(f"Processing: [{i}/{dir_count}] {d.path}")
-        # Skip 2020 because I took pictures at a different frequency
-        if "2020" in os.path.basename(d.path):
-            print("Skipping 2020")
-            continue
-        # Skip 2021 because it's already done
-        if "2021" in os.path.basename(d.path):
-            print("Skipping 2021")
-            continue
         if event == "goldenhour":
             event_for_the_day = d.middle_of_golden_hour.strftime("%Y%m%d%H%M")
             number_of_minutes = d.duration_of_golden_hour + gh_start_offset + gh_end_offset
@@ -206,14 +202,17 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
                     print(f"  [{ii}/{expected_num_files}] Skipping {fpath}")
                 ii += 1
                 # break # just do one image
-            if missing_files:
-                print("Not all expected files were found. Missing the following:")
-                for x in missing_files:
-                    print(x)
+        date += datetime.timedelta(days=1)
+    if missing_files:
+        print("Not all expected files were found. Missing the following:")
+        for x in missing_files:
+            print(x)
+    return
 
 
 if __name__ == '__main__':
     # Copy the subset of files for the event into the dest_dir
     # defaults to 15 minutes worth of images for the event
     copy_all_files(dest_dir="/Volumes/Timelapse/goldenhour_jpgs", event="goldenhour",
-                   gh_start_offset=0, gh_end_offset=15)
+                   gh_start_offset=0, gh_end_offset=15,
+                   first_day=datetime.date(2022, 12, 1), last_day=datetime.date(2022, 12, 31))
