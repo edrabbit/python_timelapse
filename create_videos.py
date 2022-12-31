@@ -1,15 +1,11 @@
 """
 Create timelapses using ffmpeg
-This assumes that the files for each timelapse have been copied to SOURCE_DIR
+This assumes that the files for each timelapse have been copied to the specified source_dir
 """
 import datetime
 import os
 import subprocess
 
-SOURCE_DIR = "/Volumes/Timelapse/event_test_files/"
-OUTPUT_DIR = "/Volumes/Timelapse/goldenhour_videos/"
-FIRST_DAY = datetime.date(2022, 1, 1)
-LAST_DAY = datetime.date(2022, 1, 31)
 
 def create_one_day_timelapse(date=None, source_dir=None, output_file=None, overwrite=False):
     """Function to create a timelapse using a subset of .jpgs in source_dir selected by the date included
@@ -19,7 +15,7 @@ def create_one_day_timelapse(date=None, source_dir=None, output_file=None, overw
     :param output_file: where the output .mp4 file should be written
     :param overwrite: boolean Should existing mp4s be overwritten? Useful if reprocessing
     """
-    # date is a datetime object
+    # ffmpeg -pattern_type glob -i "*.jpg" -framerate 30 -crf 23 -c:v libx265 -preset medium -tag:v hvc1 timelapse_full_x265_30fps_crf23_hv1_medium.mp4
     if date:
         tl_date = date.strftime("%Y%m%d")
         print(tl_date)
@@ -63,6 +59,6 @@ def create_all_timelapses(source_dir=SOURCE_DIR, output_path=OUTPUT_DIR,
 
 
 if __name__ == '__main__':
-    # 20211209164335395_TIMING
-    # ffmpeg -pattern_type glob -i "*.jpg" -framerate 30 -crf 23 -c:v libx265 -preset medium -tag:v hvc1 timelapse_full_x265_30fps_crf23_hv1_medium.mp4
-    create_all_timelapses()
+    create_all_timelapses(source_dir="/Volumes/Timelapse/goldenhour_jpgs/",
+                          output_path="/Volumes/Timelapse/goldenhour_videos/",
+                          first_day=datetime.date(2022, 1, 1), last_day=datetime.date(2022, 1, 31))

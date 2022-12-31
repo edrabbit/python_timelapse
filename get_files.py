@@ -20,7 +20,7 @@ class TLDirectory:
         self.sun = self.get_sun_info()  # dict with dawn, sunrise, noon, sunset, dusk
         self.goldenhour = self.get_golden_hour()  # dict with 'start' and 'end' for golden hour
         self.middle_of_golden_hour = self.get_middle_of_golden_hour()
-        self.duration_of_golden_hour = (self.goldenhour["end"]-self.goldenhour["start"]).seconds / 60
+        self.duration_of_golden_hour = (self.goldenhour["end"] - self.goldenhour["start"]).seconds / 60
         self.event_files = {"sunrise": None,
                             "sunset": None,
                             "goldenhour": None
@@ -38,11 +38,10 @@ class TLDirectory:
         return goldenhour
 
     def get_middle_of_golden_hour(self):
-        gh_span = self.goldenhour # golden hour has a start and end time
-        length_of_gh = gh_span["end"]-gh_span["start"]
-        gh_middle = gh_span["start"] + length_of_gh/2
+        gh_span = self.goldenhour  # golden hour has a start and end time
+        length_of_gh = gh_span["end"] - gh_span["start"]
+        gh_middle = gh_span["start"] + length_of_gh / 2
         return gh_middle
-
 
     def dt_from_dir(self):
         # Return a datetime.date object by parsing the weird directory name: "2022_03_05-2022_03_05"
@@ -78,7 +77,15 @@ class TLDirectory:
             raise Exception("No sunset images found")
         self.sunset_files = files
 
-    def get_event_images(self, event="sunset", number_of_minutes=1):
+    def get_event_images(self, event="sunset", number_of_minutes=1, gh_start_offset=0, gh_end_offset=0):
+        """
+
+        :param event:
+        :param number_of_minutes:
+        :param gh_start_offset: number of minutes to add to the start of golden hour (use negative to start earlier)
+        :param gh_end_offset: number of minutes to add to the end of golden hour (use negative to end earlier)
+        :return:
+        """
         # number_of_minutes is the total number of minutes worth of frames to return,
         # with the event in the middle
         # Filenames from timelapse cam: 192.168.1.99_01_20220305235955789_TIMING.jpg
@@ -90,10 +97,12 @@ class TLDirectory:
         # We're doing shots every 10 seconds it looks like? So this should return multiple files
         # If we ever move to >60 seconds, this won't work
         if event == "goldenhour":
-            gh_span = self.get_golden_hour() # golden hour has a start and end time
-                #.strftime("%Y%m%d%H%M")
-            length_of_gh = gh_span["end"]-gh_span["start"]
-            gh_middle = gh_span["start"] + length_of_gh/2
+            gh_span = self.get_golden_hour()  # golden hour has a start and end time
+            # .strftime("%Y%m%d%H%M")
+            length_of_gh = (
+                gh_span["end"] + datetime.timedelta(minutes=gh_end_offset)) - \
+                           (gh_span["start"] + datetime.timedelta(gh_start_offset))
+            gh_middle = gh_span["start"] + length_of_gh / 2
             s = gh_middle.strftime("%Y%m%d%H%M")
             file_prefix = "*_01_" + s + "*.jpg"
             if number_of_minutes == 1:
@@ -135,11 +144,15 @@ def get_all_directories(path="/Volumes/cam/ftp", last_x_days=0):
 def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
                    dest_dir="/Volumes/Timelapse/sunset_files",
                    event="sunset",
-                   number_of_minutes=15, last_x_days=0):
+                   number_of_minutes=15, last_x_days=0,
+                   gh_start_offset=0, gh_end_offset=0):
     """Copy subset of files from directories in source_dir to dest_dir
     :param event: sunrise, goldenhour, or sunset. Default: sunset
     :param number_of_minutes: How many minutes of footage to copy,
         if event=="goldenhour", ignored and fetches the full golden hour
+    :param last_x_days:
+    :param gh_start_offset: number of minutes to add to the start of golden hour (use negative to start earlier)
+    :param gh_end_offset: number of minutes to add to the end of golden hour (use negative to end earlier)
     """
     all_dirs = get_all_directories(path=source_dir,
                                    last_x_days=last_x_days)  # this should only have timelapse subdirs, other shit breaks it
@@ -162,11 +175,12 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
             continue
         if event == "goldenhour":
             event_for_the_day = d.middle_of_golden_hour.strftime("%Y%m%d%H%M")
-            number_of_minutes = d.duration_of_golden_hour
+            number_of_minutes = d.duration_of_golden_hour + gh_start_offset + gh_end_offset
         else:
             event_for_the_day = d.sun[event].strftime("%Y%m%d%H%M")
 
-        d.get_event_images(event=event, number_of_minutes=number_of_minutes)
+        d.get_event_images(event=event, number_of_minutes=number_of_minutes,
+                           gh_start_offset=gh_start_offset, gh_end_offset=gh_end_offset)
         print(f'..{event} was at {event_for_the_day}')
         # Check to see how many images were downloaded for this day's event to see if we need to check it
         res = list(filter(lambda x: event_for_the_day[:8] in x, dest_file_list))
@@ -201,4 +215,5 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
 if __name__ == '__main__':
     # Copy the subset of files for the event into the dest_dir
     # defaults to 15 minutes worth of images for the event
-    copy_all_files(dest_dir="/Volumes/Timelapse/goldenhour_jpgs", event="goldenhour")
+    copy_all_files(dest_dir="/Volumes/Timelapse/goldenhour_jpgs", event="goldenhour",
+                   gh_start_offset=0, gh_end_offset=15)
