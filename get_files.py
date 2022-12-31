@@ -20,6 +20,7 @@ class TLDirectory:
         self.sun = self.get_sun_info()  # dict with dawn, sunrise, noon, sunset, dusk
         self.goldenhour = self.get_golden_hour()  # dict with 'start' and 'end' for golden hour
         self.middle_of_golden_hour = self.get_middle_of_golden_hour()
+        self.duration_of_golden_hour = (self.goldenhour["end"]-self.goldenhour["start"]).seconds / 60
         self.event_files = {"sunrise": None,
                             "sunset": None,
                             "goldenhour": None
@@ -137,6 +138,8 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
                    number_of_minutes=15, last_x_days=0):
     """Copy subset of files from directories in source_dir to dest_dir
     :param event: sunrise, goldenhour, or sunset. Default: sunset
+    :param number_of_minutes: How many minutes of footage to copy,
+        if event=="goldenhour", ignored and fetches the full golden hour
     """
     all_dirs = get_all_directories(path=source_dir,
                                    last_x_days=last_x_days)  # this should only have timelapse subdirs, other shit breaks it
@@ -157,12 +160,13 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
         if "2021" in os.path.basename(d.path):
             print("Skipping 2021")
             continue
-        d.get_event_images(event=event, number_of_minutes=number_of_minutes)
         if event == "goldenhour":
             event_for_the_day = d.middle_of_golden_hour.strftime("%Y%m%d%H%M")
+            number_of_minutes = d.duration_of_golden_hour
         else:
             event_for_the_day = d.sun[event].strftime("%Y%m%d%H%M")
 
+        d.get_event_images(event=event, number_of_minutes=number_of_minutes)
         print(f'..{event} was at {event_for_the_day}')
         # Check to see how many images were downloaded for this day's event to see if we need to check it
         res = list(filter(lambda x: event_for_the_day[:8] in x, dest_file_list))
@@ -197,4 +201,4 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
 if __name__ == '__main__':
     # Copy the subset of files for the event into the dest_dir
     # defaults to 15 minutes worth of images for the event
-    copy_all_files(dest_dir="/Volumes/Timelapse/event_test_files", event="goldenhour")
+    copy_all_files(dest_dir="/Volumes/Timelapse/goldenhour_jpgs", event="goldenhour")

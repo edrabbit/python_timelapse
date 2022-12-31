@@ -7,7 +7,7 @@ import os
 import subprocess
 
 SOURCE_DIR = "/Volumes/Timelapse/event_test_files/"
-OUTPUT_DIR = "/Volumes/Timelapse/goldenhours/"
+OUTPUT_DIR = "/Volumes/Timelapse/goldenhour_videos/"
 FIRST_DAY = datetime.date(2022, 1, 1)
 LAST_DAY = datetime.date(2022, 1, 31)
 
