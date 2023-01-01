@@ -165,7 +165,11 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
     dir_count = len(all_dirs)
     date = first_day
     while date <= last_day:
-        d = all_dirs[date.strftime("%Y%m%d")]
+        try:
+            d = all_dirs[date.strftime("%Y%m%d")]
+        except KeyError:
+            print(f'{date.strftime("%Y%m%d")} not found')
+            missing_files.append(f'Directory: {date.strftime("%Y%m%d")}')
         # Do the shit
         i += 1
         print(f"Processing: [{i}/{dir_count}] {d.path}")
