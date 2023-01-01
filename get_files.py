@@ -6,6 +6,8 @@ import os
 import os.path
 import natsort
 import shutil
+import pytz
+
 
 
 class TLDirectory:
@@ -77,7 +79,9 @@ class TLDirectory:
             raise Exception("No sunset images found")
         self.sunset_files = files
 
-    def get_event_images(self, event="sunset", number_of_minutes=1, gh_start_offset=0, gh_end_offset=0):
+
+
+    def get_event_images(self, event="sunset", number_of_minutes=1, custom_time=None, gh_start_offset=0, gh_end_offset=0):
         """
 
         :param event:
@@ -109,6 +113,11 @@ class TLDirectory:
                 number_of_minutes = 60  # Assume that we want the full golden hour unless otherwise specified
             s_before = gh_middle + datetime.timedelta(minutes=(0 - int(number_of_minutes / 2)))
             s_after = gh_middle + datetime.timedelta(minutes=int(number_of_minutes / 2))
+        elif event == "custom":
+            s = custom_time.strftime("%Y%m%d%H%M")
+            file_prefix = "*_01_" + s + "*.jpg"
+            s_before = custom_time + datetime.timedelta(minutes=(0-int(number_of_minutes/2)))
+            s_after = custom_time +  + datetime.timedelta(minutes=int(number_of_minutes / 2))
         else:
             s = self.sun[event].strftime("%Y%m%d%H%M")
             file_prefix = "*_01_" + s + "*.jpg"
@@ -141,6 +150,67 @@ def get_all_directories(path="/Volumes/cam/ftp", last_x_days=0):
     return all_dirs_dict
 
 
+def get_custom_images(path, start_datetime, end_datetime):
+    files = []
+    i = start_datetime
+    while i <= end_datetime:
+        file_prefix = "*_01_" + i.strftime("%Y%m%d%H%M%S")[:-1] + "*.jpg"  # strip off the ones place for seconds
+        files.append(path, file_prefix))
+        i = i + datetime.timedelta(seconds=10)
+
+    if not files:
+        raise Exception(f"No {event} images found")
+    #self.event_files["custom"] = files
+
+# TODO: Create function for getting custom timespan
+def copy_files_timespan(source_dir="/Volumes/Timelapse/ftp",
+                        dest_dir="/Volumes/Timelapse/jpgs",
+                        first_day=None, last_day=None,
+                        start_time=None, end_time=None):
+
+    # TODO
+    all_dirs = get_all_directories(path=source_dir)
+    os.makedirs(dest_dir, exist_ok=True)
+    # TODO: How do we check to see if all the files are downloaded?
+    date = first_day
+    missing_files = []
+    while date <= last_day:
+        try:
+            d = all_dirs[date.strftime("%Y%m%d")]
+        except KeyError:
+            print(f'{date.strftime("%Y%m%d")} not found')
+            missing_files.append(f'Directory: {date.strftime("%Y%m%d")}')
+        # Do the shit
+        # TODO: get_event_images only supports standard events, either expand that or write new function
+        # get images
+        # copy images to dest_dir
+
+        event_files = get_custom_images(d.path, )
+        for f in d.event_files[event]:
+            try:
+                fpath = glob.glob(f)[0]
+            except IndexError:
+                print(f"  Did not find {f}")
+                missing_files.append(f)
+                continue
+            clean_dest_fname = fpath.split("/")[-1].replace("192.168.1.99_01_", "")
+            dest_path = os.path.join(dest_dir, clean_dest_fname)
+            if not os.path.exists(dest_path):
+                print(f"  [{ii}/{expected_num_files}] Copying {fpath} to {dest_path}")
+                shutil.copy(fpath, dest_path)
+            else:
+                print(f"  [{ii}/{expected_num_files}] Skipping {fpath}")
+            ii += 1
+            # break # just do one image
+        date += datetime.timedelta(days=1)
+    if missing_files:
+        print("Not all expected files were found. Missing the following:")
+        for x in missing_files:
+            print(x)
+    return
+
+
+# TODO: Rename this to copy_event_files
 def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
                    dest_dir="/Volumes/Timelapse/sunset_files",
                    first_day=None, last_day=None,
@@ -162,6 +232,7 @@ def copy_all_files(source_dir="/Volumes/Timelapse/ftp",
     dest_file_list = os.listdir(dest_dir)  # get a list of local files already downloaded
     missing_files = []
     i = 0
+    # TODO: dir_count is probably no longer valid, need to calculate number of days
     dir_count = len(all_dirs)
     date = first_day
     while date <= last_day:
