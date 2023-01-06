@@ -10,7 +10,7 @@ import subprocess
 def create_one_day_timelapse(date=None, source_dir=None, output_file=None, overwrite=False):
     """Function to create a timelapse using a subset of .jpgs in source_dir selected by the date included
     in the filename, as specified by date.
-    :param date: datetime object to use as file mask for the jpgs to include
+    :param date: datetime object to use as file mask for the jpgs to include, if no date passed, assume *.jpg
     :param source_dir: where the source .jpgs are located
     :param output_file: where the output .mp4 file should be written
     :param overwrite: boolean Should existing mp4s be overwritten? Useful if reprocessing
@@ -57,6 +57,17 @@ def create_all_timelapses(source_dir=None, output_path=None,
         date += datetime.timedelta(days=1)
     return
 
+def create_full_year(source_dir=None, output_path=None, year=None, overwrite=False):
+    os.makedirs(output_path, exist_ok=True)
+    # Get all the directories for each day to iterate through
+    # source_dir is probably /Volumes/Timelapse/ftp
+    # Each day is in format: 2022_01_01-2022_01_01
+    date = datetime.date(year, 1,1)
+    while date <= datetime.date(year,12,31):
+        sub_source_dir = os.path.join(source_dir, f'{date.strftime("%Y_%m_%d")}-{date.strftime("%Y_%m_%d")}')
+        outfile = os.path.join(output_path,f'{date.strftime("%Y%m%d")}.mp4')
+        create_one_day_timelapse(source_dir=sub_source_dir, output_file=outfile, overwrite=overwrite)
+        date += datetime.timedelta(days=1)
 
 if __name__ == '__main__':
     create_all_timelapses(source_dir="/Volumes/Timelapse/goldenhour_jpgs/",
