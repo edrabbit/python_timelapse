@@ -57,12 +57,12 @@ def create_all_timelapses(source_dir=None, output_path=None,
         date += datetime.timedelta(days=1)
     return
 
-def create_full_year(source_dir=None, output_path=None, year=None, overwrite=False):
+def create_full_year(source_dir=None, output_path=None, year=None, overwrite=False, start_month=1, start_day=1):
     os.makedirs(output_path, exist_ok=True)
     # Get all the directories for each day to iterate through
     # source_dir is probably /Volumes/Timelapse/ftp
     # Each day is in format: 2022_01_01-2022_01_01
-    date = datetime.date(year, 1,1)
+    date = datetime.date(year, start_month, start_day)
     while date <= datetime.date(year,12,31):
         sub_source_dir = os.path.join(source_dir, f'{date.strftime("%Y_%m_%d")}-{date.strftime("%Y_%m_%d")}')
         outfile = os.path.join(output_path,f'{date.strftime("%Y%m%d")}.mp4')
